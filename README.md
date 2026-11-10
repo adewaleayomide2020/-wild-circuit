@@ -24,7 +24,7 @@ Touch controls are available on smaller screens.
 
 - 3D oval circuit with a chase camera
 - Three computer-controlled rivals
-- Three-lap race and finish screen
+- 2-lap race and finish screen
 - Phase Pulse and Ion Shield abilities
 - Desktop keyboard and mobile touch controls
 
