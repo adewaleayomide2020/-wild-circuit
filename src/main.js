@@ -64,10 +64,10 @@ const ocean = new THREE.Mesh(
   new THREE.PlaneGeometry(440, 440, 100, 100),
   new THREE.ShaderMaterial({
     uniforms: waterUniforms,
-    vertexShader: \`uniform float uTime; varying vec2 vUv; varying float vWave;
-      void main(){ vUv=uv; vec3 p=position; float a=sin(p.x*.13+uTime*.8)*.16; float b=cos(p.y*.11-uTime*.65)*.13; p.z += a+b; vWave=a+b; gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0); }\`,
-    fragmentShader: \`uniform float uTime; varying vec2 vUv; varying float vWave;
-      void main(){ float shimmer=sin(vUv.x*180.0+uTime*1.8)*cos(vUv.y*150.0-uTime)*.035; vec3 deep=vec3(.025,.28,.39); vec3 light=vec3(.08,.57,.68); float f=clamp(.45+vWave*.8+shimmer,0.0,1.0); gl_FragColor=vec4(mix(deep,light,f),1.0); }\`,
+    vertexShader: 'uniform float uTime; varying vec2 vUv; varying float vWave;
+      void main(){ vUv=uv; vec3 p=position; float a=sin(p.x*.13+uTime*.8)*.16; float b=cos(p.y*.11-uTime*.65)*.13; p.z += a+b; vWave=a+b; gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0); }',
+    fragmentShader: 'uniform float uTime; varying vec2 vUv; varying float vWave;
+      void main(){ float shimmer=sin(vUv.x*180.0+uTime*1.8)*cos(vUv.y*150.0-uTime)*.035; vec3 deep=vec3(.025,.28,.39); vec3 light=vec3(.08,.57,.68); float f=clamp(.45+vWave*.8+shimmer,0.0,1.0); gl_FragColor=vec4(mix(deep,light,f),1.0); }',
     side: THREE.DoubleSide
   })
 );
