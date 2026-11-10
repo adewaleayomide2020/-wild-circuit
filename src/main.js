@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import './style.css';
 
 const $ = (selector) => document.querySelector(selector);
@@ -187,31 +188,11 @@ function createPine(scale = 1) {
   return group;
 }
 
+const palmPlaceholders = [];
 function createPalm(scale = 1) {
   const group = new THREE.Group();
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.39, 4.6, 8), trunkMat);
-  trunk.position.y = 2.25;
-  trunk.rotation.z = -0.08;
-  trunk.castShadow = true;
-  group.add(trunk);
-  const crown = new THREE.Vector3(0, 4.5, 0);
-  for (let i = 0; i < 8; i++) {
-    const angle = (i / 8) * Math.PI * 2;
-    const leaf = new THREE.Group();
-    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.085, 3.2, 5), palmLeafMat[i % 3]);
-    stem.position.set(0, -0.28, 1.35);
-    stem.rotation.x = Math.PI / 2.8;
-    leaf.add(stem);
-    const blade = new THREE.Mesh(new THREE.ConeGeometry(0.42, 2.2, 5), palmLeafMat[(i + 1) % 3]);
-    blade.position.set(0, -0.75, 2.35);
-    blade.rotation.x = Math.PI / 2.1;
-    leaf.add(blade);
-    leaf.rotation.y = angle;
-    leaf.position.copy(crown);
-    leaf.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-    group.add(leaf);
-  }
-  group.scale.setScalar(scale);
+  group.userData.palmScale = scale;
+  palmPlaceholders.push(group);
   return group;
 }
 
@@ -449,6 +430,82 @@ const rivals = [
   { mesh: createBuggy(0xff9a32, 0xffe1a0), progress: -1.35, base: 0.278, slowUntil: 0, lane: 2.8 }
 ];
 rivals.forEach(r => world.add(r.mesh));
+
+// Production 3D art assets: Kenney CC0 kart racers and tropical palms.
+const gltfLoader = new GLTFLoader();
+const ASSET_ROOT = 'https://cdn.jsdelivr.net/gh/shorepine/kenney@main/3d';
+const kartAssetUrls = [
+  ASSET_ROOT + '/car/kart-oobi.glb',
+  ASSET_ROOT + '/car/kart-oodi.glb',
+  ASSET_ROOT + '/car/kart-ooli.glb',
+  ASSET_ROOT + '/car/kart-oozi.glb'
+];
+
+function loadGltf(url) {
+  return new Promise((resolve, reject) => {
+    gltfLoader.load(url, (gltf) => resolve(gltf), undefined, reject);
+  });
+}
+
+function installKartModel(car, template) {
+  const model = template.clone(true);
+  model.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(model);
+  const size = bounds.getSize(new THREE.Vector3());
+  const center = bounds.getCenter(new THREE.Vector3());
+  const scale = 3.35 / Math.max(size.x, size.z, 0.01);
+
+  model.scale.setScalar(scale);
+  model.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
+  model.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+      if (child.material) {
+        child.material.side = THREE.FrontSide;
+      }
+    }
+  });
+
+  // Keep the scene's vehicle root so existing handling and camera follow stay intact.
+  for (const child of [...car.children]) car.remove(child);
+  car.add(model);
+  const wheelNodes = [];
+  model.traverse((child) => {
+    if (child.name && child.name.toLowerCase().includes('wheel')) wheelNodes.push(child);
+  });
+  car.userData.wheels = wheelNodes;
+  const glow = new THREE.PointLight(0x56fff0, car === player ? 2.1 : 0.8, 5, 2);
+  glow.position.set(0, 0.12, 0);
+  car.add(glow);
+}
+
+kartAssetUrls.forEach((url, index) => {
+  loadGltf(url).then((gltf) => {
+    const car = index === 0 ? player : rivals[index - 1]?.mesh;
+    if (car) installKartModel(car, gltf.scene);
+  }).catch((error) => {
+    console.warn('Optional kart model could not be loaded:', url, error);
+  });
+});
+
+loadGltf(ASSET_ROOT + '/nature/tree_palm.glb').then((gltf) => {
+  for (const placeholder of palmPlaceholders) {
+    const palm = gltf.scene.clone(true);
+    palm.scale.setScalar((placeholder.userData.palmScale || 1) * 6.8);
+    palm.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    for (const child of [...placeholder.children]) placeholder.remove(child);
+    placeholder.add(palm);
+  }
+}).catch((error) => {
+  console.warn('Optional palm model could not be loaded:', error);
+});
+
 
 const shield = new THREE.Mesh(
   new THREE.SphereGeometry(2.2, 26, 18),
