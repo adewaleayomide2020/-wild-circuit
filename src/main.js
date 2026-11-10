@@ -114,7 +114,7 @@ const makeOvalBand = (innerX, innerZ, outerX, outerZ, y, material, segments = 22
     positions.push(outerX * Math.cos(a), y, outerZ * Math.sin(a));
     if (i < segments) {
       const n = i * 2;
-      indices.push(n, n + 1, n + 2, n + 1, n + 3, n + 2);
+      indices.push(n, n + 2, n + 1, n + 1, n + 2, n + 3);
     }
   }
   const geometry = new THREE.BufferGeometry();
